@@ -23,6 +23,7 @@ Optimize prompt structure and length to reduce token usage while maintaining out
 - [Prompt Optimizer](https://github.com/vaibkumr/prompt-optimizer) - Minimize token complexity
 - [PromptOpti](https://promptopti.com/prompt-compression/) - Compression tool
 - [LLMLingua](https://www.mongodb.com/developer/products/atlas/prompt_compression/) - Prompt compression via LangChain
+- [toon](https://github.com/johannschopplich/toon) - Reduce JSON by 30% for promtps.
 - Skeleton-of-Thought (SoT) prompting for 2.39x faster generation
 
 ## Batch Processing
