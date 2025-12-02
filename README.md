@@ -18,6 +18,7 @@ Optimize prompt structure and length to reduce token usage while maintaining out
 - [Top 6 Strategies to Optimize Token Costs for LLM APIs](https://blog.typingmind.com/optimize-token-costs-for-chatgpt-and-llm-api/)
 - [Efficient Prompting Methods for LLMs: A Survey](https://arxiv.org/html/2404.01077v1)
 - [Learn Prompting: Guide to Communicating with AI](https://learnprompting.org/docs/introduction)
+- [Agent variables](https://www.reddit.com/r/AI_Agents/comments/1pbfjru/we_cut_agent_token_usage_and_speed_by_82_with_one/)
 
 **Tools:**
 - [Prompt Optimizer](https://github.com/vaibkumr/prompt-optimizer) - Minimize token complexity
