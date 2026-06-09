@@ -2,16 +2,21 @@
 
 ## Table of Contents
 - [Prompt Reduction Techniques](#prompt-reduction-techniques)
+- [Prompt Caching](#prompt-caching)
+- [Reasoning Budget Controls](#reasoning-budget-controls)
 - [Batch Processing](#batch-processing)
+- [Flex Processing](#flex-processing)
+- [Context Compaction and Editing](#context-compaction-and-editing)
+- [Deferred Tool Loading](#deferred-tool-loading)
 - [LLM Routing](#llm-routing)
 - [Cascading LLM Approach](#cascading-llm-approach)
-- [Video Processing Speed (2x)](#video-processing-speed-2x)
-- [Audio Processing Speed (2x)](#audio-processing-speed-2x)
+- [Video-to-Text Preprocessing](#video-to-text-preprocessing)
+- [Audio Acceleration](#audio-acceleration)
 - [Model Optimization](#model-optimization)
 
 ## Prompt Reduction Techniques
 
-Optimize prompt structure and length to reduce token usage while maintaining output quality. Token reduction leads to linear API cost reduction and quadratic computational complexity reduction.
+Optimize prompt structure and length to reduce token usage while maintaining output quality. For token-priced APIs, fewer input tokens usually reduce cost roughly linearly; latency and compute savings depend on the model and serving stack.
 
 **Research Links:**
 - [LLMLingua: Prompt Compression - Microsoft Research](https://www.microsoft.com/en-us/research/blog/llmlingua-innovating-llm-efficiency-with-prompt-compression/)
@@ -22,43 +27,84 @@ Optimize prompt structure and length to reduce token usage while maintaining out
 
 **Tools:**
 - [Prompt Optimizer](https://github.com/vaibkumr/prompt-optimizer) - Minimize token complexity
-- [PromptOpti](https://promptopti.com/prompt-compression/) - Compression tool
 - [LLMLingua](https://www.mongodb.com/developer/products/atlas/prompt_compression/) - Prompt compression via LangChain
-- [toon](https://github.com/johannschopplich/toon) - Reduce JSON by 30% for promtps.
-- Skeleton-of-Thought (SoT) prompting for 2.39x faster generation
+- [TOON](https://github.com/toon-format/toon) - Compact alternative to JSON for uniform, tabular data in prompts
+- Skeleton-of-Thought (SoT) prompting - Reported 2.39x faster generation in its evaluation
+
+## Prompt Caching
+
+Reuse stable prompt prefixes such as system instructions, examples, long documents, and tool definitions. Put shared content first and request-specific content last to improve cache-hit rates, then monitor cached-token usage and account for provider-specific minimums, expiration times, and cache-write costs.
+
+**Provider Documentation:**
+- [OpenAI Prompt Caching](https://developers.openai.com/api/docs/guides/prompt-caching)
+- [Claude Prompt Caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)
+- [Gemini Context Caching](https://ai.google.dev/gemini-api/docs/caching)
+- [Amazon Bedrock Prompt Caching](https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html)
+
+## Reasoning Budget Controls
+
+Match reasoning effort to task complexity instead of using the maximum setting for every request. Start with lower effort for routine classification, extraction, and lookup tasks, and increase it only when evaluations show a meaningful quality improvement.
+
+**Provider Documentation:**
+- [OpenAI Reasoning Effort](https://developers.openai.com/api/docs/guides/reasoning#reasoning-effort)
+- [Claude Effort](https://platform.claude.com/docs/en/build-with-claude/effort)
+- [Gemini Thinking Budgets](https://ai.google.dev/gemini-api/docs/thinking#thinking-budgets)
 
 ## Batch Processing
 
-Process AI requests in batches for guaranteed 50% cost reduction across all major providers. Best for non-urgent workloads with 24-hour processing windows.
+Process non-urgent AI requests asynchronously in batches. Many providers offer batch pricing at about 50% of standard rates, but discounts, model support, limits, and completion windows vary.
 
 **Research Links:**
 - [Azure OpenAI Global Batch Offering](https://techcommunity.microsoft.com/blog/azure-ai-services-blog/announcing-azure-openai-global-batch-offering-efficient-processing-at-scale-with/4210929)
 - [Together AI Batch API](https://www.together.ai/blog/batch-api)
-- [OpenAI 50% Discount on Batch Processing](https://news.ycombinator.com/item?id=40043845)
+- [OpenAI Batch API](https://developers.openai.com/api/docs/guides/batch)
 
 **Tools:**
 - Azure OpenAI Batch API
 - Together AI Batch API
-- Google Vertex AI Batch
+- Google Gemini Batch API
 - Mistral Batch API
-- [agamm/batchata](https://github.com/agamm/batchata) - Unified Python API for Batch requests 
+- [agamm/batchata](https://github.com/agamm/batchata) - Unified Python API for batch requests
+
+## Flex Processing
+
+Use lower-cost, slower processing tiers for workloads that do not need predictable latency. OpenAI Flex processing is intended for non-production or lower-priority tasks that can tolerate longer responses, occasional resource-unavailable errors, and retry logic.
+
+**Provider Documentation:**
+- [OpenAI Flex Processing](https://developers.openai.com/api/docs/guides/flex-processing)
+
+## Context Compaction and Editing
+
+Reduce the repeated input cost of long-running conversations by compacting older history or clearing stale tool results and reasoning blocks. Preserve decisions, user requirements, and unresolved work while removing verbose intermediate data that no longer affects the task.
+
+**Provider Documentation:**
+- [OpenAI Compaction](https://developers.openai.com/api/docs/guides/compaction)
+- [Claude Context Editing](https://platform.claude.com/docs/en/build-with-claude/context-editing)
+
+## Deferred Tool Loading
+
+Avoid sending every tool or MCP definition with every request. Load tool definitions only when they are relevant, especially for agents with large catalogs, while keeping frequently used tools immediately available when the search overhead would not be worthwhile.
+
+**Provider Documentation:**
+- [OpenAI Tool Search](https://developers.openai.com/api/docs/guides/tools-tool-search)
+- [Claude Tool Search](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool)
 
 ## LLM Routing
 
-Route requests to the most cost-effective model capable of handling each task, achieving 30-80% cost reduction through intelligent model selection.
+Route requests to the most cost-effective model likely to meet each task's quality and latency requirements. Reported savings vary substantially by workload, model pool, and routing accuracy.
 
 **Research Links:**
 - [RouteLLM: Open-Source Framework for Cost-Effective LLM Routing](https://lmsys.org/blog/2024-07-01-routellm/)
 - [LLM Providers Performance vs Cost Analysis](https://nelsonauner.com/data/2024/04/15/empirical-results-of-LLM-scoring.html)
 
 **Tools:**
-- [OpenRouter](https://openrouter.ai/) (use `<model>:floor` for cheapest)
+- [OpenRouter provider routing](https://openrouter.ai/docs/guides/routing/provider-selection) (use `<model>:floor` to prioritize the lowest-priced provider)
 - [Requesty](https://www.requesty.ai/)
 - RouteLLM framework
 
 ## Cascading LLM Approach
 
-Start with cheap models and escalate to expensive ones only when necessary. Achieves 60-85% cost reduction through intelligent escalation strategies.
+Start with cheaper models and escalate only when a confidence check, evaluator, or task policy indicates that a stronger model is needed. Savings depend on escalation rate and evaluator quality.
 
 **Research Links:**
 - [Cascade AI: Full LLM Power, 60% Cheaper](https://domino.ai/blog/full-llm-power-60-percent-cheaper)
@@ -71,9 +117,9 @@ Start with cheap models and escalate to expensive ones only when necessary. Achi
 - Mixture of Thought (MoT) frameworks
 - Custom cascade implementations
 
-## Video Processing Speed (2x)
+## Video-to-Text Preprocessing
 
-Speed up video by 2-3x before processing to reduce duration-based charges and token count. OpenAI charges by the minute, so shorter minutes mean lower costs.
+For transcription or speech-focused analysis of video, extract the audio and optionally accelerate it before transcription. This can reduce effective duration-based costs, but savings and accuracy depend on the provider, model, audio quality, and playback speed.
 
 **Research Links:**
 - [OpenAI Charges by the Minute, So Make the Minutes Shorter](https://george.mand.is/2025/06/openai-charges-by-the-minute-so-make-the-minutes-shorter/)
@@ -81,13 +127,13 @@ Speed up video by 2-3x before processing to reduce duration-based charges and to
 - [STORM: Spatiotemporal Token Reduction](https://research.nvidia.com/labs/lpr/storm/)
 
 **Tools:**
-- ffmpeg with `atempo` filter for video acceleration
-- STORM (8x cost reduction through token compression)
-- LLM-VTP (80-90% token reduction)
+- ffmpeg with the `atempo` filter for accelerating extracted audio
+- STORM (reported up to 8x lower compute cost for long-video understanding)
+- LLM-VTP (reported 80-90% token reduction in evaluated settings)
 
-## Audio Processing Speed (2x)
+## Audio Acceleration
 
-Accelerate audio by 2-3x before transcription to reduce duration-based costs. Achieves 23-67% cost reduction with minimal quality loss.
+Accelerate audio before transcription when the selected API's billing decreases with effective audio duration or token count. Benchmark transcription quality on representative audio before using this in production.
 
 **Research Links:**
 - [OpenAI Charges by the Minute, So Make the Minutes Shorter](https://george.mand.is/2025/06/openai-charges-by-the-minute-so-make-the-minutes-shorter/)
@@ -100,7 +146,7 @@ Accelerate audio by 2-3x before transcription to reduce duration-based costs. Ac
 
 ## Model Optimization
 
-Reduce AI inference costs through model compression and optimization techniques while maintaining output quality.
+Reduce self-hosted inference costs through model compression and optimization while measuring the effect on quality, latency, throughput, and hardware compatibility.
 
 **Research Links:**
 - [LLM Compression Research Papers](https://github.com/HuangOwen/Awesome-LLM-Compression)
@@ -108,7 +154,6 @@ Reduce AI inference costs through model compression and optimization techniques 
 - [Contemporary Model Compression on LLMs](https://arxiv.org/abs/2409.01990)
 
 **Tools:**
-- AWQ quantization (8x model size reduction)
+- AWQ low-bit weight quantization (INT3/INT4)
 - Model pruning libraries
 - Knowledge distillation frameworks
-
